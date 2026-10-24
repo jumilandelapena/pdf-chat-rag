@@ -65,6 +65,8 @@ extend-exclude = ["scripts/.cache"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501"]
 
 [tool.ruff.format]
 quote-style = "double"
+line-ending = "lf"

@@ -33,7 +33,9 @@ def main(argv: list[str] | None = None) -> int:
                 if needle in fold(page.text):
                     print(f"{Path(pdf).name} | page {page.page_number}: found")
                 continue
-            print(f"===== {Path(pdf).name} | page {page.page_number} | {page.char_count} chars =====")
+            print(
+                f"===== {Path(pdf).name} | page {page.page_number} | {page.char_count} chars ====="
+            )
             print(page.text)
             print()
     return 0
