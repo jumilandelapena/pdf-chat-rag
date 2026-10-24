@@ -32,7 +32,7 @@ test('upload, ask, cite, open the page', async ({ page }) => {
   await expect(chip).toBeVisible()
   const cited = Number(await chip.getAttribute('data-page'))
   await chip.click()
-  await expect(page.getByTestId('viewer-page-indicator')).toHaveText(new RegExp(`^Page ${cited} of \d+`), {
+  await expect(page.getByTestId('viewer-page-indicator')).toHaveText(new RegExp('^Page ' + cited + ' of [0-9]+'), {
     timeout: 30_000,
   })
   await expect(page.getByTestId('cited-passage')).toBeVisible()
