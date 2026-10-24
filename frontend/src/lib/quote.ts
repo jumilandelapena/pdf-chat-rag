@@ -25,8 +25,7 @@ function foldChar(ch: string): string {
 export function foldText(text: string): string {
   let out = ''
   for (const ch of text) {
-    const folded = foldChar(ch)
-    for (const f of folded) {
+    for (const f of foldChar(ch)) {
       if (/\s/.test(f)) {
         if (!out.endsWith(' ')) out += ' '
       } else out += f
@@ -35,28 +34,35 @@ export function foldText(text: string): string {
   return out.trim()
 }
 
+/** Folded concatenation of all items plus, for every folded char, where it came from. */
 function buildHaystack(items: TextItemLike[]): { text: string; origins: (Origin | null)[] } {
   let text = ''
   const origins: (Origin | null)[] = []
-  const pushSpace = () => {
-    if (text.endsWith(' ') || text === '') return
-    text += ' '
-    origins.push(null)
-  }
   items.forEach((item, itemIndex) => {
     let offset = 0
     for (const ch of item.str) {
       const start = offset
       offset += ch.length
       for (const f of foldChar(ch)) {
-        if (/\s/.test(f)) pushSpace()
-        else {
+        const last = origins[origins.length - 1]
+        if (/\s/.test(f)) {
+          if (text.endsWith(' ')) {
+            // collapsed whitespace run: keep the previous origin contiguous
+            if (last && last.item === itemIndex) last.end = offset
+          } else if (text !== '') {
+            text += ' '
+            origins.push({ item: itemIndex, start, end: offset })
+          }
+        } else {
           text += f
           origins.push({ item: itemIndex, start, end: offset })
         }
       }
     }
-    if (item.hasEOL) pushSpace()
+    if (item.hasEOL && text !== '' && !text.endsWith(' ')) {
+      text += ' '
+      origins.push(null)
+    }
   })
   return { text, origins }
 }
@@ -72,7 +78,14 @@ function mergeRanges(ranges: [number, number][]): [number, number][] {
   return out
 }
 
-function locate(haystack: string, origins: (Origin | null)[], needle: string): ItemRanges {
+function trimRange(str: string, range: [number, number]): [number, number] {
+  let [s, e] = range
+  while (s < e && /\s/.test(str[s] ?? '')) s++
+  while (e > s && /\s/.test(str[e - 1] ?? '')) e--
+  return [s, e]
+}
+
+function locate(items: TextItemLike[], haystack: string, origins: (Origin | null)[], needle: string): ItemRanges {
   const result: ItemRanges = new Map()
   if (!needle) return result
   let from = 0
@@ -88,7 +101,13 @@ function locate(haystack: string, origins: (Origin | null)[], needle: string): I
     }
     from = at + Math.max(needle.length, 1)
   }
-  for (const [item, ranges] of result) result.set(item, mergeRanges(ranges))
+  for (const [item, ranges] of result) {
+    const str = items[item]?.str ?? ''
+    const merged = mergeRanges(ranges)
+      .map((r) => trimRange(str, r))
+      .filter(([s, e]) => e > s)
+    result.set(item, merged)
+  }
   return result
 }
 
@@ -97,11 +116,11 @@ export function findQuoteRanges(items: TextItemLike[], quote: string): ItemRange
   const needle = foldText(quote)
   if (!needle) return new Map()
   const { text, origins } = buildHaystack(items)
-  const full = locate(text, origins, needle)
+  const full = locate(items, text, origins, needle)
   if (full.size > 0) return full
   const words = needle.split(' ')
   if (words.length <= 12) return full
-  return locate(text, origins, words.slice(0, 12).join(' '))
+  return locate(items, text, origins, words.slice(0, 12).join(' '))
 }
 
 export function escapeHtml(s: string): string {

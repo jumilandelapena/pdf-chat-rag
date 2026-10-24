@@ -1,4 +1,4 @@
-import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
@@ -20,8 +20,9 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}'],
-    alias: {
-      'react-pdf': path.resolve(import.meta.dirname, 'src/test/mocks/react-pdf.tsx'),
-    },
+    css: false,
+    alias: [
+      { find: /^react-pdf$/, replacement: fileURLToPath(new URL('./src/test/mocks/react-pdf.tsx', import.meta.url)) },
+    ],
   },
 })
