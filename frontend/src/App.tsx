@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { API_BASE } from './api/base'
 import { AppLayout } from './components/AppLayout'
 import { useBackendHealth } from './hooks/useBackendHealth'
-import { useChats } from './hooks/useChats'
+import { useChat, useChats } from './hooks/useChats'
 import { cx } from './lib/cx'
 
 export const ACTIVE_CHAT_KEY = 'pdfchat.activeChat'
@@ -30,12 +30,18 @@ export default function App() {
     }
   }, [activeChatId])
 
+  // A chat that is not in the list is only "stale" once its own fetch failed; a chat created a
+  // moment ago is already in the query cache while the list is still refetching.
+  const activeChat = useChat(activeChatId ?? null)
   useEffect(() => {
     if (!chats.data || activeChatId === null) return
-    if (activeChatId === undefined || !chats.data.some((c) => c.id === activeChatId)) {
+    if (activeChatId === undefined) {
       setActiveChatId(chats.data[0]?.id ?? null)
+      return
     }
-  }, [chats.data, activeChatId])
+    const listed = chats.data.some((c) => c.id === activeChatId)
+    if (!listed && activeChat.isError) setActiveChatId(chats.data[0]?.id ?? null)
+  }, [chats.data, activeChatId, activeChat.isError])
 
   return (
     <div className="flex min-h-dvh flex-col bg-slate-50 text-slate-900 lg:h-dvh">
