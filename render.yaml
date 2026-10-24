@@ -1,0 +1,23 @@
+# Render Blueprint for the backend only (the frontend goes to Vercel; see docs/deploy.md).
+services:
+  - type: web
+    name: pdf-chat-rag-api
+    runtime: docker
+    plan: free            # explicit: omitting it creates a paid instance. See docs/deploy.md for the paid path.
+    region: oregon
+    rootDir: backend
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    envVars:
+      - key: PORT
+        value: "8000"
+      - key: WEB_CONCURRENCY
+        value: "1"
+      - key: LLM_PROVIDER
+        value: anthropic
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        value: https://your-project.vercel.app
+      - key: DATA_DIR
+        value: /app/data

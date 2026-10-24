@@ -1,0 +1,12 @@
+.venv/
+data/
+.e2e-data/
+scripts/.cache/
+evals/results/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+tests/
+.env*
+*.md

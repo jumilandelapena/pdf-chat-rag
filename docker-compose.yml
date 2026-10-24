@@ -1,0 +1,43 @@
+name: pdf-chat-rag
+
+services:
+  backend:
+    build: ./backend
+    image: pdf-chat-rag-backend
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      LLM_PROVIDER: ${LLM_PROVIDER:-mock}
+      EMBEDDINGS_PROVIDER: local
+      DATA_DIR: /app/data
+      CORS_ORIGINS: http://localhost:8080,http://localhost:5173
+    volumes:
+      - backend-data:/app/data
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 36
+      start_period: 60s
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    image: pdf-chat-rag-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+volumes:
+  backend-data: {}
